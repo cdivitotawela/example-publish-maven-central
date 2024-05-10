@@ -1,0 +1,16 @@
+name: publish
+
+on:
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    container:
+      image: cimg/openjdk:11.0.22
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+    
+      - name: Build
+        run: mvn compile 
