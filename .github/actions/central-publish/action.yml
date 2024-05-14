@@ -1,0 +1,82 @@
+name: 'Publish to Central'
+description: 'Publish Maven artifact to Central'
+
+inputs:
+  gpg-base64-key:
+    description: 'Base64 encoded gpg private key'
+    required: true
+  gpg-passphrase:
+    desription: 'Passphrase for gpg key'
+    required: true
+  central-username:
+    desription: 'Central API username'
+  central-password:
+    desription: 'Central API password'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install pre-requisites (Debian)
+      shell: bash
+      run: |
+        sudo apt-get update && sudo apt-get install -y xmlstarlet tree
+      
+    - name: Get coordinates
+      shell: bash
+      run: |
+        echo VERSION=$(xmlstarlet sel -N x="http://maven.apache.org/POM/4.0.0" -t -v "/x:project/x:version" pom.xml) >> "$GITHUB_ENV"
+        echo ARTIFACT_ID=$(xmlstarlet sel -N x="http://maven.apache.org/POM/4.0.0" -t -v "/x:project/x:artifactId" pom.xml) >> "$GITHUB_ENV"
+        echo GROUP_ID=$(xmlstarlet sel -N x="http://maven.apache.org/POM/4.0.0" -t -v "/x:project/x:groupId" pom.xml) >> "$GITHUB_ENV"
+    
+    - name: Setup GPG
+      shell: bash
+      run: |
+        echo ${{ inputs.gpg-base64-key }} | base64 -d > ./private.key
+        gpg --import --passphrase ${{ inputs.gpg-passphrase }} --batch --yes ./private.key
+        rm -f ./private.keyg
+
+    - name: Prepare artifacts
+      shell: bash
+      run: |
+        mkdir $GITHUB_WORKSPACE/publish && cd $GITHUB_WORKSPACE/publish
+        PKG_FOLDERS="$(echo $GROUP_ID | sed 's/\./ /g') $ARTIFACT_ID $VERSION"
+        
+        dest="."
+        for d in $PKG_FOLDERS
+        do
+          dest="${dest}/${d}"
+        done
+        echo "PUBLISH_DIR=$dest" >> "$GITHUB_ENV"
+        echo $dest && mkdir -p $dest
+
+        cp $GITHUB_WORKSPACE/target/${ARTIFACT_ID}-${VERSION}.jar ${dest}/
+        cp $GITHUB_WORKSPACE/target/${ARTIFACT_ID}-${VERSION}-javadoc.jar ${dest}/
+        cp $GITHUB_WORKSPACE/target/${ARTIFACT_ID}-${VERSION}-sources.jar ${dest}/
+        cp $GITHUB_WORKSPACE/pom.xml ${dest}/${ARTIFACT_ID}-${VERSION}.pom
+
+        cd $GITHUB_WORKSPACE/publish/${dest}/
+        tree .
+        find . -type f | grep -v ".asc$" | grep -v ".md5$" | grep -v ".sha1$"
+        export GPG_TTY=$(tty)
+        for f in `find . -type f | grep -v ".asc$" | grep -v ".md5$" | grep -v ".sha1$"`
+        do
+          fname=$(basename $f)
+          echo "Generate hash and signature for $fname"
+          gpg --pinentry-mode=loopback --passphrase ${{ inputs.gpg-passphrase }} --yes -ab ./${fname}
+          md5sum $fname | cut -d ' ' -f 1 > ${fname}.md5
+          sha1sum $fname | cut -d ' ' -f 1 > ${fname}.sha1
+        done
+
+        tree 
+        cd $GITHUB_WORKSPACE/publish
+        zip release.zip ${dest}/*
+
+    - name: Publish
+      shell: bash
+      run: |
+        cd $GITHUB_WORKSPACE/publish
+        AUTH_BASE64=$(echo "${{ inputs.central-username }}:${{ inputs.central-password }}" | base64)
+        curl --request POST \
+          --header "Authorization: Bearer $AUTH_BASE64" \
+          --form bundle=@release.zip \
+          https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC
