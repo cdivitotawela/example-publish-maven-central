@@ -2,15 +2,26 @@ name: publish
 
 on:
   workflow_dispatch:
+  push:
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     container:
       image: cimg/openjdk:11.0.22
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
     
       - name: Build
-        run: mvn compile 
+        run: mvn package javadoc:jar source:jar
+      
+      - name: Extract version
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xmlstarlet
+          echo version=$(xmlstarlet sel -N x="http://maven.apache.org/POM/4.0.0" -t -v "/x:project/x:version" pom.xml) >> "$GITHUB_ENV"
+
+      - name: Extract version
+        run: ${{ env.version }}
