@@ -6,7 +6,7 @@
 
   <groupId>name.divitotawela.sandbox</groupId>
   <artifactId>example</artifactId>
-  <version>1.0.2</version>
+  <version>1.0.3</version>
 
   <name>example</name>
   <description>Example project to check publish to central</description>

@@ -71,6 +71,12 @@ runs:
         cd $GITHUB_WORKSPACE/publish
         zip release.zip ${dest}/*
 
+    - name: Save artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: artifact
+        path: $GITHUB_WORKSPACE/publish/release.zip
+
     - name: Publish
       shell: bash
       run: |
