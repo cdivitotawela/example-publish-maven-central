@@ -70,19 +70,20 @@ runs:
         tree 
         cd $GITHUB_WORKSPACE/publish
         zip release.zip ${dest}/*
+        ls -l $GITHUB_WORKSPACE/publish
 
     - name: Save artifact
       uses: actions/upload-artifact@v4
       with:
-        name: artifact
+        name: release
         path: $GITHUB_WORKSPACE/publish/release.zip
 
-    - name: Publish
-      shell: bash
-      run: |
-        cd $GITHUB_WORKSPACE/publish
-        AUTH_BASE64=$(echo "${{ inputs.central-username }}:${{ inputs.central-password }}" | base64)
-        curl --request POST \
-          --header "Authorization: Bearer $AUTH_BASE64" \
-          --form bundle=@release.zip \
-          https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC
+    # - name: Publish
+    #   shell: bash
+    #   run: |
+    #     cd $GITHUB_WORKSPACE/publish
+    #     AUTH_BASE64=$(echo "${{ inputs.central-username }}:${{ inputs.central-password }}" | base64)
+    #     curl --request POST \
+    #       --header "Authorization: Bearer $AUTH_BASE64" \
+    #       --form bundle=@release.zip \
+    #       https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC
