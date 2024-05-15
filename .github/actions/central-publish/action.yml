@@ -78,12 +78,12 @@ runs:
         name: release
         path: ${{ github.workspace }}/publish/release.zip
 
-    # - name: Publish
-    #   shell: bash
-    #   run: |
-    #     cd $GITHUB_WORKSPACE/publish
-    #     AUTH_BASE64=$(echo "${{ inputs.central-username }}:${{ inputs.central-password }}" | base64)
-    #     curl --request POST \
-    #       --header "Authorization: Bearer $AUTH_BASE64" \
-    #       --form bundle=@release.zip \
-    #       https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC
+    - name: Publish
+      shell: bash
+      run: |
+        cd $GITHUB_WORKSPACE/publish
+        AUTH_BASE64=$(echo "${{ inputs.central-username }}:${{ inputs.central-password }}" | base64)
+        curl --request POST \
+          --header "Authorization: Bearer $AUTH_BASE64" \
+          --form bundle=@release.zip \
+          https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC
