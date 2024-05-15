@@ -76,7 +76,7 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         name: release
-        path: $GITHUB_WORKSPACE/publish/release.zip
+        path: ${{ github.workspace }}/publish/release.zip
 
     # - name: Publish
     #   shell: bash
