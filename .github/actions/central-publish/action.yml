@@ -1,5 +1,6 @@
 name: 'Publish to Central'
-description: 'Publish Maven artifact to Central'
+description: |
+  This action is not used. Keeping the code for reference how to perform the publish very manual way.
 
 inputs:
   gpg-base64-key:
@@ -33,7 +34,7 @@ runs:
       run: |
         echo ${{ inputs.gpg-base64-key }} | base64 -d > ./private.key
         gpg --import --passphrase ${{ inputs.gpg-passphrase }} --batch --yes ./private.key
-        rm -f ./private.keyg
+        rm -f ./private.key
 
     - name: Prepare artifacts
       shell: bash

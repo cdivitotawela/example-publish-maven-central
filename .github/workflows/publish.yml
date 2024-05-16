@@ -13,14 +13,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
     
-      - name: Build
-        run: mvn package install javadoc:jar source:jar
+      - name: Import gpg key
+        run: |
+          echo ${{ secrets.GPG_BASE64_KEY }} | base64 -d > ./private.key
+          gpg --import --passphrase ${{ secrets.GPG_PASSPHRASE }} --batch --yes ./private.key
+          rm -f ./private.key
 
-      - name: Publish
-        uses: cdivitotawela/example-publish-maven-central/.github/actions/central-publish@main
+      - name: Deploy
+        run: |
+          mvn --settings m2/settings.xml deploy
+        env:
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Save artifact
+        uses: actions/upload-artifact@v4
         with:
-          gpg-base64-key: ${{ secrets.GPG_BASE64_KEY }}
-          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
-          central-username: ${{ secrets.CENTRAL_USERNAME }}
-          central-password: ${{ secrets.CENTRAL_PASSWORD }}
+          name: central-bundle
+          path: ${{ github.workspace }}/target/central-publishing/central-bundle.zip
+      
 
